@@ -1,0 +1,15 @@
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: rebuild
+spec:
+  runLatest:
+    configuration:
+      revisionTemplate:
+        spec:
+          container:
+            image: docker.io/jeremiaswerner/rebuild:latest
+            env:
+            - name: SERVICE
+              value: "helloworld"
+          containerConcurrency: 1
