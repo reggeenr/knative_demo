@@ -8,7 +8,7 @@ spec:
       revisionTemplate:
         spec:
           container:
-            image: docker.io/jeremiaswerner/rebuild:latest
+            image: docker.io/jeremiaswerner/rebuild@sha256:ff83eeb5c7943e4565db6e604069e001a7e644faf2e3c96b270f050327d2a17
             env:
             - name: SERVICE
               value: "helloworld"

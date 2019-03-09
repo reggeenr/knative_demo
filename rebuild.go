@@ -59,7 +59,10 @@ func PatchKnativeServiceViaAPI(service string) {
    uri := host + "/apis/serving.knative.dev/v1alpha1/namespaces/" + string(namespace) + "/services/" + string(service)
    fmt.Println("URI: " + string(uri))
 
-   jsonBody := []byte(`[{"op":"replace","path":"/spec/runLatest/configuration/build/metadata/annotations/trigger","value":"JWe"}]`)
+   timeVal := time.Now()
+   timeStr := timeVal.Format("20060102150405")
+
+   jsonBody := []byte(`[{"op":"replace","path":"/spec/runLatest/configuration/build/metadata/annotations/trigger","value":"` + timeStr + `"}]`)
    requestBody := bytes.NewBuffer(jsonBody)
    fmt.Println("Patch: " + string(jsonBody))
 
