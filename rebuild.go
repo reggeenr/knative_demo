@@ -5,10 +5,13 @@ import (
   "fmt"
   "io/ioutil"
   "net/http"
-  // "os"
+  "os"
+  "regexp"
+  "crypto/tls"
   // "os/exec"
   // "strings"
   "time"
+  "bytes"
 )
 
 // func Run(cmd string, args ...string) string {
@@ -21,26 +24,65 @@ import (
 //   return string(out)
 // }
 
+func check(e error) {
+    if e != nil {
+        panic(e)
+    }
+}
+
+func PatchKnativeServiceViaAPI(service string) {
+   host := "https://kubernetes.default.svc" // use in cluster
+   //host := "https://c3.us-south.containers.cloud.ibm.com:22141" // use local
+
+   dir := "/run/secrets/kubernetes.io/serviceaccount"
+   //dir := "/tmp" // use local
+
+   fmt.Println("patching service: " + string(service))
+   fmt.Print("kubernetes API server: " + string(host))
+
+
+   t, err := ioutil.ReadFile(dir + "/token")
+   check(err)
+   re := regexp.MustCompile(`\r?\n`)
+   token := re.ReplaceAllString(string(t), "")
+   //fmt.Print(string(token))
+
+   //cert, err := ioutil.ReadFile(dir + "/ca.crt")
+   //check(err)
+   //fmt.Print(string(cert))
+
+   n, err := ioutil.ReadFile(dir + "/namespace")
+   check(err)
+   namespace := re.ReplaceAllString(string(n), "")
+   //fmt.Print(string(namespace))
+
+   uri := host + "/apis/serving.knative.dev/v1alpha1/namespaces/" + string(namespace) + "/services/" + string(service)
+   fmt.Println("URI: " + string(uri))
+
+   jsonBody := []byte(`[{"op":"replace","path":"/spec/runLatest/configuration/build/metadata/annotations/trigger","value":"JWe"}]`)
+   requestBody := bytes.NewBuffer(jsonBody)
+   fmt.Println("Patch: " + string(jsonBody))
+
+
+   tr := &http.Transport{
+     TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+   }
+   client := &http.Client{Transport: tr}
+   req, err := http.NewRequest("PATCH", uri, requestBody)
+   check(err)
+   req.Header.Set("Authorization", "Bearer " + token)
+   req.Header.Set("Content-Type", "application/json-patch+json")
+   res, err := client.Do(req)
+   check(err)
+   response, err := ioutil.ReadAll(res.Body)
+   fmt.Println("Response: " + string(response))
+
+}
+
 func main() {
   ready := true
-  //apikey := os.Getenv("IC_KEY")
-  //cluster := os.Getenv("CLUSTER")
 
-  //fmt.Printf("Cluster: %s\nAPIKey: %s\n", cluster, apikey[:3])
-
-  // Put this in the background so we don't slow down the
-  // creation of the Knative rebuild service
-  // go func() {
-  //   Run("bx", "login", "--apikey", apikey, "-r", "us-south")
-  //   Run("bx", "config", "--check-version", "false")
-  //   export := Run("bx", "ks", "cluster-config", "-s", "--export", cluster)
-  //   export = strings.SplitN(export, "=", 2)[1]
-  //   export = strings.TrimSpace(export)
-  //
-  //   fmt.Printf("export KUBCONFIG=%s\n", export)
-  //   os.Setenv("KUBECONFIG", export)
-  //   ready = true
-  // }()
+  service := os.Getenv("SERVICE")
 
   http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
     // Wait for our IBM Cloud setup to finish
@@ -66,9 +108,7 @@ func main() {
       fmt.Printf("Got hook event\n")
     } else if msg["pusher"] != nil {
       fmt.Printf("Got push event\n")
-      //out, err := exec.Command("/rebuild.sh").CombinedOutput()
-      //fmt.Printf("%s\n%s\n", out, err)
-      //fmt.Fprintf(w, "%s\n%s\n", out, err)
+      PatchKnativeServiceViaAPI(service)
     } else {
       fmt.Printf("Unknown event\n")
     }
