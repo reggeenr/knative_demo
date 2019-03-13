@@ -38,7 +38,7 @@ func PatchKnativeServiceViaAPI(service string) {
    //dir := "/tmp" // use local
 
    fmt.Println("patching service: " + string(service))
-   fmt.Print("kubernetes API server: " + string(host))
+   fmt.Println("kubernetes API server: " + string(host))
 
 
    t, err := ioutil.ReadFile(dir + "/token")
@@ -62,7 +62,7 @@ func PatchKnativeServiceViaAPI(service string) {
    timeVal := time.Now()
    timeStr := timeVal.Format("20060102150405")
 
-   jsonBody := []byte(`[{"op":"replace","path":"/spec/runLatest/configuration/build/metadata/annotations/trigger","value":"` + timeStr + `"}]`)
+   jsonBody := []byte(`[{"op":"replace","path":"/spec/runLatest/configuration/build/template/arguments/1","value": {"name":"trigger", "value":"` + timeStr + `"}}]`)
    requestBody := bytes.NewBuffer(jsonBody)
    fmt.Println("Patch: " + string(jsonBody))
 
