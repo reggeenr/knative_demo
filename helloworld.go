@@ -10,7 +10,7 @@ import (
 
 func main() {
     t := time.Now()
-    text := "Hello World Rico, it's demo time " + t.Format("20060102150405") + " :-)"
+    text := "Hello World Rico, it's demo time " + t.Format("20060102150405") + " :)"
 
     rev := os.Getenv("K_REVISION") // K_REVISION=helloworld-s824d
     if i := strings.LastIndex(rev, "-"); i > 0 {
